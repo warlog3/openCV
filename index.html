@@ -27,25 +27,17 @@
         inputElement.addEventListener('change', (e) => {
             imgElement.src = URL.createObjectURL(e.target.files[0]);
         }, false);
-        imgElement.onload = function () {
 
+        imgElement.onload = function () {
+            let mat = cv.imread(imgElement);
+            mat.gray();
+
+
+/*
             let { area, contour } = getMaxContour(gray);
 
             let dilateIterations = 0;
-
-            const MAX_DILATE_ITERATIONS = 9;
-            while (area < MINIMAL_POSSIBLE_AREA && dilateIterations < MAX_DILATE_ITERATIONS) {
-                dilateIterations++;
-                gray = gray.dilate(new cv.Mat(), new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT);
-
-                let result = getMaxContour(gray);
-                contour = result.contour;
-                area = result.area;
-
-                if (DEBUG) {
-                    writeImage(`dilated_${dilateIterations}.png`, gray);
-                }
-            }
+            const MAX_DILATE_OPERATIONS = 9;
 
             const getMaxContour = (image) => {
                 const contours = image.findContours(cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
@@ -75,7 +67,12 @@
                 };
             }
 
-            let mat = cv.imread(imgElement);
+
+
+
+*/
+
+            //let mat = cv.imread(imgElement);
             cv.imshow('canvasOutput', mat);
             mat.delete();
         };
