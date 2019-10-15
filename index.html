@@ -28,32 +28,51 @@
             imgElement.src = URL.createObjectURL(e.target.files[0]);
         }, false);
         imgElement.onload = function () {
-            const imageSize = {
-                width: gray.cols,
-                height: gray.rows
-            };
 
-            const threshold_min = 200;
-            const ratio_min_max = 1;
-            const edges = gray.canny(threshold_min, threshold_min * ratio_min_max, 3);
+            let { area, contour } = getMaxContour(gray);
 
-            const minLineLength = imageSize.width / 4,
-                maxLineGap = 10,
-                threshold = 100;
-            const lines = edges.houghLinesP(1, Math.PI / 180, threshold, minLineLength, maxLineGap);
+            let dilateIterations = 0;
 
-            //draw lines on the output
-            for (let i = 0; i < lines.length; i++) {
-                const l = lines[i];
-                const { x, y, z, w } = l;
-                output.drawLine(
-                    cv.Point(w, x),
-                    cv.Point(y, z),
-                    new cv.Vec(Math.random() * 255, Math.random() * 255, Math.random() * 255),
-                    // new cv.Vec(0,0,255), 
-                    2,
-                    // 1
-                );
+            const MAX_DILATE_ITERATIONS = 9;
+            while (area < MINIMAL_POSSIBLE_AREA && dilateIterations < MAX_DILATE_ITERATIONS) {
+                dilateIterations++;
+                gray = gray.dilate(new cv.Mat(), new cv.Point(-1, -1), 1, cv.BORDER_CONSTANT);
+
+                let result = getMaxContour(gray);
+                contour = result.contour;
+                area = result.area;
+
+                if (DEBUG) {
+                    writeImage(`dilated_${dilateIterations}.png`, gray);
+                }
+            }
+
+            const getMaxContour = (image) => {
+                const contours = image.findContours(cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+                let maxAreaFound = 0;
+                let maxContour = [];
+                let contourObj = null;
+                console.log(`Found ${contours.length} contours.`);
+                contours.forEach((contour, i) => {
+                    // const perimeter = cv.arcLength(contour, true);
+                    const perimeter = contour.arcLength(true);
+                    const approx = contour.approxPolyDP(0.1 * perimeter, true);
+                    const area = contour.moments()['m00'];
+
+                    if (approx.length == 4 && maxAreaFound < area) {
+                        maxAreaFound = area;
+                        maxContour = approx;
+                        contourObj = contour;
+                    }
+                });
+
+                console.log(JSON.stringify(contourObj))
+                console.log(`Max contour area found ${maxAreaFound}.`);
+
+                return {
+                    contour: maxContour,
+                    area: maxAreaFound
+                };
             }
 
             let mat = cv.imread(imgElement);
